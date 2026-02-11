@@ -1,5 +1,5 @@
-from django.views.generic import ListView, DetailView
-from django.db.models import Q
+from django.views.generic import ListView, DetailView, TemplateView
+from django.db.models import Q, Count
 from .models import Country
 
 
@@ -45,3 +45,28 @@ class CountryDetailView(DetailView):
     model = Country
     template_name = 'countries/detail.html'
     context_object_name = 'country'
+
+
+
+class StatsView(TemplateView):
+    template_name = "countries/stats.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["total_countries"] = Country.objects.count()
+
+        context["top_population"] = Country.objects.order_by("-population")[:10]
+
+        context["top_area"] = Country.objects.filter(
+            area__isnull=False
+        ).order_by("-area")[:10]
+
+        context["region_distribution"] = (
+            Country.objects
+            .values("region")
+            .annotate(count=Count("cca3"))
+            .order_by("-count")
+        )
+
+        return context

@@ -12,9 +12,18 @@
             padding: 20px;
             background-color: #f5f5f5;
         }
-        h1 {
-            color: #333;
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
+
+        .header h1 {
+            color: #333;
+            margin:0;
+        }
+
         .filters {
             background: white;
             padding: 20px;
@@ -105,7 +114,19 @@
     </style>
 </head>
 <body>
-    <h1>Countries List</h1>
+
+    <div class="header">
+        <h1>Countries List</h1>
+        <div>
+        <a href="{% url 'countries:stat' %}" style="display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">
+            View Statistics
+        </a>
+    </div>
+    </div>
+
+    
+    
+    
     
     <div class="filters">
         <form method="get">

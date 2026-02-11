@@ -155,7 +155,11 @@
                         <img src="{{ country.flag_url }}" alt="{{ country.common_name }} flag" class="flag">
                     {% endif %}
                 </td>
-                <td><strong>{{ country.common_name }}</strong></td>
+                <td>
+                    <a href="{% url 'countries:detail' country.cca3 %}" style="color: #007bff; text-decoration: none; font-weight: bold;">
+                        {{ country.common_name }}
+                    </a>
+                </td>
                 <td>{{ country.cca3 }}</td>
                 <td>{{ country.capital|default:"—" }}</td>
                 <td>{{ country.region }}</td>

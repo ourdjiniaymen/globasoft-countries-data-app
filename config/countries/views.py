@@ -1,4 +1,4 @@
-from django.views.generic import ListView
+from django.views.generic import ListView, DetailView
 from django.db.models import Q
 from .models import Country
 
@@ -38,3 +38,10 @@ class CountryListView(ListView):
         context['current_search'] = self.request.GET.get('search', '')
         
         return context
+
+
+
+class CountryDetailView(DetailView):
+    model = Country
+    template_name = 'countries/detail.html'
+    context_object_name = 'country'

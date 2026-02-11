@@ -1,3 +1,4 @@
+import requests
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.db.utils import IntegrityError
@@ -113,6 +114,60 @@ class ImportCountriesCommandTest(TestCase):
         # Deuxième import (même données)
         command.handle()
         self.assertEqual(Country.objects.count(), 1)  # Toujours 1, pas de doublon
+    
+    @patch('countries.management.commands.import_countries.requests.get')
+    @patch('countries.management.commands.import_countries.time.sleep')
+    def test_import_retry_on_failure(self, mock_sleep, mock_get):
+        """Test retry mechanism: réussit au 2ème essai"""
+        # Premier appel échoue, deuxième réussit
+        mock_response_success = Mock()
+        mock_response_success.json.return_value = [
+            {
+                'cca3': 'FRA',
+                'cca2': 'FR',
+                'name': {'common': 'France', 'official': 'French Republic'},
+                'capital': ['Paris'],
+                'region': 'Europe',
+                'subregion': 'Western Europe',
+                'population': 67000000,
+                'area': 551695,
+                'flags': {'png': 'https://example.com/flag.png'},
+                'currencies': {}
+            }
+        ]
+        mock_response_success.raise_for_status = Mock()
+        
+        # Premier appel lève une exception, deuxième réussit
+        mock_get.side_effect = [
+            requests.RequestException('Network error'),
+            mock_response_success
+        ]
+        
+        # Exécution de la commande
+        command = Command()
+        command.handle()
+        
+        # Vérifications
+        self.assertEqual(mock_get.call_count, 2)  # 2 tentatives
+        self.assertEqual(mock_sleep.call_count, 1)  # 1 délai entre les tentatives
+        mock_sleep.assert_called_with(2)  # Délai de 2 secondes
+        self.assertEqual(Country.objects.count(), 1)  # Import réussi
+    
+    @patch('countries.management.commands.import_countries.requests.get')
+    @patch('countries.management.commands.import_countries.time.sleep')
+    def test_import_all_retries_fail(self, mock_sleep, mock_get):
+        """Test échec après 3 tentatives"""
+        # Toutes les tentatives échouent
+        mock_get.side_effect = requests.RequestException('Network error')
+        
+        # Exécution de la commande
+        command = Command()
+        command.handle()
+        
+        # Vérifications
+        self.assertEqual(mock_get.call_count, 3)  # 3 tentatives
+        self.assertEqual(mock_sleep.call_count, 2)  # 2 délais (entre tentative 1-2 et 2-3)
+        self.assertEqual(Country.objects.count(), 0)  # Aucun pays importé
 
 
 class CountryListViewTest(TestCase):

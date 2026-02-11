@@ -1,4 +1,5 @@
 import requests
+import time
 from django.core.management.base import BaseCommand
 from countries.models import Country
 
@@ -7,17 +8,28 @@ class Command(BaseCommand):
     help = 'Import countries data from REST Countries API'
 
     API_URL = 'https://restcountries.com/v3.1/all?fields=name,cca2,cca3,capital,region,subregion,population,area,flags,currencies'
-
+    MAX_RETRIES = 3
+    RETRY_DELAY = 2 # seconds
+    
     def handle(self, *args, **options):
         self.stdout.write('Fetching countries from API...')
         
-        try:
-            response = requests.get(self.API_URL, timeout=30)
-            response.raise_for_status()
-            countries_data = response.json()
-        except requests.RequestException as e:
-            self.stdout.write(self.style.ERROR(f'API request failed: {e}'))
-            return
+        for attempt in range(1, self.MAX_RETRIES+1):
+            try:
+                self.stdout.write(f'Attempt {attempt}/{self.MAX_RETRIES}...')
+                response = requests.get(self.API_URL, timeout=30)
+                response.raise_for_status()
+                countries_data = response.json()
+                self.stdout.write(self.style.SUCCESS(f'API request successful on attempt {attempt}'))
+                break
+            except requests.RequestException as e:
+                self.stdout.write(self.style.ERROR(f'API request failed: {e}'))
+                if attempt < self.MAX_RETRIES:
+                    self.stdout.write(f'Retrying in {self.RETRY_DELAY} seconds...')
+                    time.sleep(self.RETRY_DELAY)
+                else:
+                    self.stdout.write(self.style.ERROR('All retry attempts failed. Aborting.'))
+                    return
 
         self.stdout.write(f'Received {len(countries_data)} countries')
         

@@ -261,7 +261,7 @@ class StatsViewTest(TestCase):
         for i in range(15):
             Country.objects.create(
                 cca3=f'C{i:02d}',
-                cca2=f'C{i}',
+                cca2=f'{i:02d}',  # Format 2 caractères: 00, 01, 02, ..., 14
                 common_name=f'Country {i}',
                 official_name=f'Official Country {i}',
                 region='Europe' if i < 10 else 'Asia',
